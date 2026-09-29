@@ -1,0 +1,258 @@
+.report {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* ---------- 요약 카드 ---------- */
+
+.summary {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
+}
+
+.summaryHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  padding: 0.85rem 1.5rem;
+  background: linear-gradient(90deg, var(--brand-strong), var(--brand));
+  color: white;
+}
+
+.reportLabel {
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.reportDate {
+  font-size: 0.8rem;
+  opacity: 0.8;
+}
+
+.summaryBody {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  padding: 1.75rem 1.75rem 1.5rem;
+}
+
+.summaryInfo {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.siteUrl {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--foreground);
+  overflow-wrap: anywhere;
+}
+
+.statTiles {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.6rem;
+}
+
+.statTile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.7rem 0.5rem;
+  border-radius: 12px;
+  background: var(--tone-bg);
+  border: 1px solid var(--tone-border);
+}
+
+.statNum {
+  font-size: 1.6rem;
+  font-weight: 800;
+  line-height: 1.1;
+  color: var(--tone);
+  font-variant-numeric: tabular-nums;
+}
+
+.statLabel {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--tone);
+}
+
+.metaList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.86rem;
+}
+
+.metaList > div {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.metaList dt {
+  flex-shrink: 0;
+  width: 6.5rem;
+  color: var(--muted);
+}
+
+.metaList dd {
+  color: var(--ink-soft);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.shareButton {
+  align-self: flex-start;
+  min-height: 42px;
+  padding: 0.55rem 1.1rem;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--brand);
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.shareButton:hover {
+  background: var(--brand-soft);
+  border-color: #c7d6fb;
+}
+
+/* ---------- 카테고리 탭 ---------- */
+
+.categories {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.tabs {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.5rem;
+}
+
+.tab {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.15rem;
+  padding: 0.75rem 0.9rem;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  cursor: pointer;
+  text-align: left;
+  color: inherit;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.tab:hover {
+  border-color: var(--tone-border);
+}
+
+.tab[aria-selected="true"] {
+  background: var(--tone-bg);
+  border-color: var(--tone);
+  box-shadow: 0 0 0 1px var(--tone) inset;
+}
+
+.tabName {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.98rem;
+  font-weight: 800;
+  color: var(--foreground);
+}
+
+.tabDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--tone);
+}
+
+.tabCount {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--tone);
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.panelHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  padding: 0 0.15rem;
+}
+
+.panelTitle {
+  font-size: 1.2rem;
+  font-weight: 800;
+}
+
+.countsLine {
+  display: inline-flex;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.countsLine > [data-tone] {
+  color: var(--tone);
+}
+
+.dot {
+  color: var(--subtle);
+}
+
+.cardList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+@media (max-width: 640px) {
+  .summaryBody {
+    flex-direction: column;
+    gap: 1.25rem;
+    padding: 1.5rem 1.1rem 1.25rem;
+  }
+
+  .summaryHead {
+    padding: 0.75rem 1.1rem;
+  }
+
+  .siteUrl {
+    text-align: center;
+    font-size: 1.05rem;
+  }
+
+  .shareButton {
+    align-self: stretch;
+  }
+
+  .tabs {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

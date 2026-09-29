@@ -1,38 +1,55 @@
 .wrap {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.75rem;
 }
 
 .svg {
-  width: 180px;
-  height: 180px;
+  width: 220px;
+  height: 220px;
+  overflow: visible;
 }
 
 .track {
-  stroke: #e5e7eb;
+  stroke: #eef2f7;
 }
 
 .progress {
-  transition: stroke-dashoffset 0.6s ease;
+  stroke: var(--tone);
+  filter: drop-shadow(0 2px 6px color-mix(in srgb, var(--tone) 30%, transparent));
 }
 
 .scoreText {
-  font-size: 2.25rem;
-  font-weight: 700;
-  fill: #111827;
+  font-size: 3.4rem;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  fill: var(--foreground);
+  font-variant-numeric: tabular-nums;
 }
 
 .scoreSub {
-  font-size: 0.85rem;
-  fill: #6b7280;
+  font-size: 0.8rem;
+  font-weight: 600;
+  fill: var(--subtle);
 }
 
 .badge {
-  padding: 0.3rem 1rem;
+  /* 게이지 아래 빈 부분(270° 호의 입구)에 걸쳐 놓는다 */
+  margin-top: -2.4rem;
+  padding: 0.35rem 1.1rem;
   border-radius: 999px;
-  color: white;
-  font-weight: 700;
+  color: var(--tone);
+  background: var(--tone-bg);
+  border: 1px solid var(--tone-border);
+  font-weight: 800;
   font-size: 0.95rem;
+  letter-spacing: 0.02em;
+}
+
+@media (max-width: 480px) {
+  .svg {
+    width: 190px;
+    height: 190px;
+  }
 }

@@ -37,7 +37,7 @@ async function fetchOneHop(url: URL, signal: AbortSignal): Promise<{ res: Respon
   return { res, ttfbMs };
 }
 
-async function readBodyCapped(res: Response): Promise<string> {
+async function readBodyCapped(res: Response, maxBytes: number = MAX_BODY_BYTES): Promise<string> {
   const reader = res.body?.getReader();
   if (!reader) return "";
 
@@ -48,7 +48,7 @@ async function readBodyCapped(res: Response): Promise<string> {
     const { done, value } = await reader.read();
     if (done) break;
     if (value) {
-      const remaining = MAX_BODY_BYTES - total;
+      const remaining = maxBytes - total;
       if (remaining <= 0) {
         await reader.cancel();
         break;
@@ -56,7 +56,7 @@ async function readBodyCapped(res: Response): Promise<string> {
       const slice = value.length > remaining ? value.slice(0, remaining) : value;
       chunks.push(slice);
       total += slice.length;
-      if (total >= MAX_BODY_BYTES) {
+      if (total >= maxBytes) {
         await reader.cancel();
         break;
       }
@@ -129,18 +129,32 @@ export async function safeFetch(inputUrl: string): Promise<SafeFetchResult> {
   }
 }
 
+export interface SafeFetchPathOptions {
+  /** 기본 10초. 부가 체크는 함수 실행 시간 제한을 고려해 더 짧게 줄 수 있다. */
+  timeoutMs?: number;
+  /** 기본 2MB. 앞부분만 보면 되는 체크는 작게 줄 수 있다. */
+  maxBytes?: number;
+  /** 기본 false(200일 때만 본문을 읽음). 404 에러 페이지처럼 비-200 본문이 필요할 때 true. */
+  readBodyOnAnyStatus?: boolean;
+}
+
 /**
  * 노출 경로(/.env 등) 확인용 보조 fetch. 반드시 같은 호스트에서만 호출할 것.
  * 리다이렉트를 따라가지 않고, 실패 시 조용히 null을 반환한다(부가 체크이므로).
  */
-export async function safeFetchPath(baseUrl: string, path: string): Promise<{ status: number; body: string } | null> {
+export async function safeFetchPath(
+  baseUrl: string,
+  path: string,
+  options: SafeFetchPathOptions = {}
+): Promise<{ status: number; body: string } | null> {
+  const { timeoutMs = TIMEOUT_MS, maxBytes = MAX_BODY_BYTES, readBodyOnAnyStatus = false } = options;
   try {
     const target = new URL(path, baseUrl);
     const validated = await validateUrlFully(target.toString());
     if (!validated.ok) return null;
 
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS);
+    const timeout = setTimeout(() => controller.abort(), timeoutMs);
     try {
       const res = await fetch(validated.url.toString(), {
         method: "GET",
@@ -148,7 +162,7 @@ export async function safeFetchPath(baseUrl: string, path: string): Promise<{ st
         signal: controller.signal,
         headers: { "User-Agent": USER_AGENT },
       });
-      const body = res.status === 200 ? await readBodyCapped(res) : "";
+      const body = res.status === 200 || readBodyOnAnyStatus ? await readBodyCapped(res, maxBytes) : "";
       return { status: res.status, body };
     } finally {
       clearTimeout(timeout);

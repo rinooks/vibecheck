@@ -1,7 +1,58 @@
 :root {
-  --background: #f5f6f8;
-  --foreground: #111827;
+  --background: #f4f6fa;
+  --foreground: #0f172a;
+  --surface: #ffffff;
+  --border: #e2e8f0;
+  --muted: #64748b;
+  --subtle: #94a3b8;
+  --ink-soft: #334155;
+  --brand: #1d4ed8;
+  --brand-strong: #1e3a8a;
+  --brand-soft: #eff4ff;
+
+  /* 등급/상태 색상 시스템: 우수·통과 / 양호 / 주의 / 위험 */
+  --excellent: #059669;
+  --excellent-bg: #ecfdf5;
+  --excellent-border: #a7f3d0;
+  --good: #2563eb;
+  --good-bg: #eff6ff;
+  --good-border: #bfdbfe;
+  --caution: #d97706;
+  --caution-bg: #fffbeb;
+  --caution-border: #fde68a;
+  --danger: #dc2626;
+  --danger-bg: #fef2f2;
+  --danger-border: #fecaca;
+
+  --radius: 16px;
+  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.04), 0 1px 3px rgba(15, 23, 42, 0.06);
+  --shadow-md: 0 4px 24px rgba(15, 23, 42, 0.06), 0 1px 3px rgba(15, 23, 42, 0.05);
   color-scheme: light;
+}
+
+/* data-tone 속성 하나로 점수·뱃지·탭에 같은 색을 입힌다 */
+[data-tone="excellent"] {
+  --tone: var(--excellent);
+  --tone-bg: var(--excellent-bg);
+  --tone-border: var(--excellent-border);
+}
+
+[data-tone="good"] {
+  --tone: var(--good);
+  --tone-bg: var(--good-bg);
+  --tone-border: var(--good-border);
+}
+
+[data-tone="caution"] {
+  --tone: var(--caution);
+  --tone-bg: var(--caution-bg);
+  --tone-border: var(--caution-border);
+}
+
+[data-tone="danger"] {
+  --tone: var(--danger);
+  --tone-bg: var(--danger-bg);
+  --tone-border: var(--danger-border);
 }
 
 html {
@@ -20,10 +71,13 @@ body {
   flex-direction: column;
   color: var(--foreground);
   background: var(--background);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Apple SD Gothic Neo", "Noto Sans KR", Roboto,
-    "Malgun Gothic", sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Pretendard", "Noto Sans KR", "Segoe UI",
+    Roboto, "Malgun Gothic", sans-serif;
+  line-height: 1.5;
+  word-break: keep-all;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  -webkit-tap-highlight-color: transparent;
 }
 
 * {
@@ -43,4 +97,9 @@ button {
 
 input {
   font-family: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
 }

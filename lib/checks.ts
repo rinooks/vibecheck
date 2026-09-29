@@ -25,6 +25,11 @@ export interface ExposedFetchResult {
   body: string;
 }
 
+export interface SourcemapProbe {
+  mapUrl: string;
+  result: ExposedFetchResult | null;
+}
+
 export interface DiagnosisContext {
   inputUrl: string;
   finalUrl: string;
@@ -38,6 +43,9 @@ export interface DiagnosisContext {
   exposedWpConfig: ExposedFetchResult | null;
   exposedDsStore: ExposedFetchResult | null;
   exposedServerStatus: ExposedFetchResult | null;
+  sourcemapProbes: SourcemapProbe[];
+  tlsDaysUntilExpiry: number | null;
+  errorPageProbe: ExposedFetchResult | null;
 }
 
 // ---------- HTML 파싱 헬퍼 (경량, 추가 의존성 없이 정규식 기반) ----------
@@ -334,6 +342,162 @@ function checkMixedContent(ctx: DiagnosisContext): Check {
   };
 }
 
+function checkSourcemapExposure(ctx: DiagnosisContext): Check {
+  const exposed = ctx.sourcemapProbes.filter(
+    (p) => p.result?.status === 200 && /"sources"|"mappings"/.test(p.result.body)
+  );
+  const checked = ctx.sourcemapProbes.length;
+  return {
+    id: "sourcemap-exposure",
+    category: "보안",
+    title: "소스맵(.map) 파일 노출",
+    status: exposed.length > 0 ? "warning" : "pass",
+    why: "소스맵(.js.map)은 압축된 자바스크립트를 원래 코드로 되돌려주는 파일이에요. 이게 공개돼 있으면 누구나 내 앱의 원본 코드를 그대로 읽을 수 있어서, 코드에 남겨둔 API 주소나 숨겨둔 로직이 드러날 수 있어요.",
+    howToFix: "프로덕션 빌드에서 소스맵을 만들지 않거나 외부에 올리지 않도록 설정하세요. Next.js는 기본적으로 브라우저용 소스맵을 공개하지 않으니 productionBrowserSourceMaps 설정이 켜져 있는지 확인하세요. Vite는 build.sourcemap 옵션을 끄면 돼요.",
+    aiPrompt: `내 웹사이트 ${ctx.inputUrl}에서 자바스크립트 소스맵(.js.map) 파일이 외부에 공개돼 있어서 원본 소스코드가 그대로 보인대. 프로덕션 배포에서 소스맵이 공개되지 않도록 빌드 설정을 고쳐줘. 나는 비개발자니까 단계별로 쉽게 설명해줘.`,
+    details:
+      exposed.length > 0
+        ? `소스맵 ${exposed.length}개가 열람 가능해요 (예: ${exposed[0].mapUrl})`
+        : checked > 0
+        ? `같은 사이트의 스크립트 ${checked}개를 확인했고, 공개된 소스맵은 없었어요.`
+        : "확인할 같은 사이트 스크립트가 없었어요.",
+  };
+}
+
+function checkTlsExpiry(ctx: DiagnosisContext): Check {
+  const isHttps = ctx.finalUrl.startsWith("https://");
+  const days = ctx.tlsDaysUntilExpiry;
+  let status: CheckStatus = "pass";
+  if (isHttps && days !== null) {
+    if (days < 14) status = "danger";
+    else if (days < 30) status = "warning";
+  }
+
+  let details: string;
+  if (!isHttps) details = "http 사이트라 해당 없어요";
+  else if (days === null) details = "인증서 정보를 가져오지 못했어요";
+  else if (days < 0) details = `인증서가 ${Math.abs(days)}일 전에 만료됐어요.`;
+  else details = `인증서 만료까지 ${days}일 남았어요.`;
+
+  return {
+    id: "tls-expiry",
+    category: "보안",
+    title: "SSL 인증서 만료일",
+    status,
+    why: "SSL 인증서가 만료되면 방문자 브라우저에 '연결이 비공개로 설정되어 있지 않습니다' 같은 무서운 경고가 전체 화면으로 떠요. 대부분의 방문자는 그 자리에서 떠나버려요.",
+    howToFix: "Vercel, Netlify, Cloudflare 같은 플랫폼은 인증서를 자동으로 갱신해 주니 도메인 연결 상태를 확인하세요. 직접 서버를 운영 중이라면 Let's Encrypt(certbot)의 자동 갱신이 제대로 돌고 있는지 점검하세요.",
+    aiPrompt: `내 웹사이트 ${ctx.inputUrl}의 SSL 인증서가 ${days !== null && days >= 0 ? `${days}일 뒤에` : "이미"} 만료된대. 인증서를 갱신하고, 앞으로는 자동으로 갱신되도록 설정하는 방법을 알려줘. 나는 비개발자니까 단계별로 쉽게 설명해줘.`,
+    details,
+  };
+}
+
+interface CookieIssue {
+  name: string;
+  missing: string[];
+}
+
+function findCookieIssues(setCookies: string[], isHttps: boolean): CookieIssue[] {
+  const issues: CookieIssue[] = [];
+  for (const raw of setCookies) {
+    const [pair, ...attrParts] = raw.split(";");
+    const name = pair.split("=")[0].trim() || "(이름 없음)";
+    const attrs = attrParts.map((a) => a.trim().toLowerCase());
+    const missing: string[] = [];
+    if (isHttps && !attrs.includes("secure")) missing.push("Secure");
+    if (!attrs.includes("httponly")) missing.push("HttpOnly");
+    if (!attrs.some((a) => a.startsWith("samesite"))) missing.push("SameSite");
+    if (missing.length > 0) issues.push({ name, missing });
+  }
+  return issues;
+}
+
+function checkCookieFlags(ctx: DiagnosisContext): Check {
+  const setCookies = ctx.headers.getSetCookie();
+  const isHttps = ctx.finalUrl.startsWith("https://");
+  const issues = findCookieIssues(setCookies, isHttps);
+  const summary = issues.map((i) => `${i.name}(${i.missing.join(", ")} 없음)`).join(", ");
+  return {
+    id: "cookie-flags",
+    category: "보안",
+    title: "쿠키 보안 설정",
+    status: issues.length > 0 ? "warning" : "pass",
+    why: "쿠키에 보안 옵션이 빠져 있으면 로그인 정보가 담긴 쿠키를 악성 스크립트가 훔쳐가거나(HttpOnly 없음), 암호화 안 된 통신으로 새어 나가거나(Secure 없음), 다른 사이트가 내 사이트인 척 요청을 보낼 때 쿠키가 따라갈 수 있어요(SameSite 없음).",
+    howToFix: "쿠키를 만드는 코드(로그인, 세션 등)에서 Secure, HttpOnly, SameSite=Lax 옵션을 함께 지정하세요. 자바스크립트에서 꼭 읽어야 하는 쿠키가 아니라면 HttpOnly는 켜두는 게 좋아요.",
+    aiPrompt: `내 웹사이트 ${ctx.inputUrl}가 보내는 쿠키 중에 보안 옵션이 빠진 게 있대: ${summary || "없음"}. 각 쿠키에 Secure, HttpOnly, SameSite 옵션을 알맞게 추가하도록 코드를 고쳐줘. 나는 비개발자니까 단계별로 쉽게 설명해줘.`,
+    details:
+      setCookies.length === 0
+        ? "응답에 Set-Cookie가 없어요."
+        : issues.length > 0
+        ? `보안 옵션이 빠진 쿠키: ${summary}`
+        : `쿠키 ${setCookies.length}개 모두 보안 옵션이 설정돼 있어요.`,
+  };
+}
+
+function checkCorsWildcard(ctx: DiagnosisContext): Check {
+  const value = ctx.headers.get("access-control-allow-origin");
+  const isWildcard = value?.trim() === "*";
+  return {
+    id: "cors-wildcard",
+    category: "보안",
+    title: "CORS 전체 허용 (*)",
+    status: isWildcard ? "warning" : "pass",
+    why: "Access-Control-Allow-Origin: * 는 '세상의 모든 사이트가 내 서버 응답을 읽어가도 된다'는 뜻이에요. 공개 API라면 괜찮지만, 로그인한 사용자 정보를 돌려주는 곳이라면 다른 사이트가 그 데이터를 몰래 가져갈 여지가 생겨요.",
+    howToFix: "정말로 모든 사이트에 공개해야 하는 게 아니라면, 허용할 도메인(예: 내 프론트엔드 주소)만 콕 집어서 지정하세요.",
+    aiPrompt: `내 웹사이트 ${ctx.inputUrl}의 응답에 Access-Control-Allow-Origin: * 헤더가 붙어 있어서 아무 사이트나 내 서버 응답을 읽을 수 있대. 꼭 필요한 도메인만 허용하도록 CORS 설정을 고쳐줘. 나는 비개발자니까 단계별로 쉽게 설명해줘.`,
+    details: value ? `access-control-allow-origin: ${value}` : "access-control-allow-origin 헤더가 없어요.",
+  };
+}
+
+const ERROR_LEAK_PATTERNS: Array<[RegExp, string]> = [
+  [/Traceback/i, "Traceback"],
+  [/Stack trace/i, "Stack trace"],
+  [/at\s+[\w$<>.]+\s*\(/, "at 함수명(...) 형태의 스택"],
+  [/\.php on line \d+/i, ".php on line N"],
+  [/\bException\b/i, "Exception"],
+];
+
+function checkErrorPageLeak(ctx: DiagnosisContext): Check {
+  // 정상 페이지의 인라인 스크립트/스타일 코드가 스택 패턴으로 오인되지 않도록 제외하고 본다.
+  const text = (ctx.errorPageProbe?.body ?? "")
+    .replace(/<script\b[\s\S]*?<\/script>/gi, " ")
+    .replace(/<style\b[\s\S]*?<\/style>/gi, " ");
+  const matched = ERROR_LEAK_PATTERNS.find(([re]) => re.test(text));
+  return {
+    id: "error-page-leak",
+    category: "보안",
+    title: "에러 페이지 내부 정보 노출",
+    status: matched ? "warning" : "pass",
+    why: "없는 페이지나 오류가 났을 때 화면에 서버 코드 경로, 에러 종류, 스택 트레이스가 그대로 보이면 공격자에게 내 서버의 구조와 약점을 알려주는 셈이에요.",
+    howToFix: "배포 환경에서 디버그 모드를 끄고, 사용자에게는 '페이지를 찾을 수 없어요' 같은 간단한 안내만 보여주는 전용 에러 페이지를 만드세요. 자세한 에러는 서버 로그에만 남기면 돼요.",
+    aiPrompt: `내 웹사이트 ${ctx.inputUrl}에서 없는 주소로 접속하면 에러 페이지에 서버 내부 정보(스택 트레이스, 에러 이름 등)가 보인대. 배포 환경에서 디버그 모드를 끄고 간단한 커스텀 404/에러 페이지를 보여주도록 고쳐줘. 나는 비개발자니까 단계별로 쉽게 설명해줘.`,
+    details: !ctx.errorPageProbe
+      ? "에러 페이지를 확인하지 못했어요."
+      : matched
+      ? `없는 주소의 응답(상태코드 ${ctx.errorPageProbe.status})에서 "${matched[1]}" 흔적이 보여요.`
+      : `없는 주소의 응답(상태코드 ${ctx.errorPageProbe.status})에서 내부 정보 노출은 보이지 않았어요.`,
+  };
+}
+
+function checkCharset(ctx: DiagnosisContext): Check {
+  const metaCharset = /<meta\b[^>]*\bcharset\s*=\s*["']?\s*([\w-]+)/i.exec(ctx.body)?.[1] ?? null;
+  const headerCharset = /charset\s*=\s*["']?([\w-]+)/i.exec(ctx.headers.get("content-type") ?? "")?.[1] ?? null;
+  const declared = metaCharset || headerCharset;
+  return {
+    id: "charset",
+    category: "기본 상태",
+    title: "문자 인코딩(charset) 선언",
+    status: declared ? "pass" : "warning",
+    why: "문자 인코딩이 선언돼 있지 않으면 브라우저가 글자 규칙을 추측하다가 한글이 '�����'처럼 깨져 보일 수 있어요. 특히 오래된 브라우저나 일부 앱 내 브라우저에서 자주 생겨요.",
+    howToFix: "HTML의 <head> 맨 위에 <meta charset=\"utf-8\"> 를 넣거나, 서버 응답의 Content-Type 헤더에 charset=utf-8 을 붙이세요.",
+    aiPrompt: `내 웹사이트 ${ctx.inputUrl}에 문자 인코딩(charset) 선언이 없어서 한글이 깨질 위험이 있대. <head>에 <meta charset="utf-8">을 추가하거나 Content-Type 헤더에 charset=utf-8을 지정해줘. 나는 비개발자니까 단계별로 쉽게 설명해줘.`,
+    details: metaCharset
+      ? `meta charset: ${metaCharset}`
+      : headerCharset
+      ? `Content-Type 헤더 charset: ${headerCharset}`
+      : "meta charset과 Content-Type charset 모두 없어요.",
+  };
+}
+
 function checkStatusCode(ctx: DiagnosisContext): Check {
   const code = ctx.statusCode;
   let status: CheckStatus = "pass";
@@ -557,10 +721,16 @@ export function buildChecks(ctx: DiagnosisContext): Check[] {
     checkExposedDsStore(ctx),
     checkExposedServerStatus(ctx),
     checkMixedContent(ctx),
+    checkSourcemapExposure(ctx),
+    checkTlsExpiry(ctx),
+    checkCookieFlags(ctx),
+    checkCorsWildcard(ctx),
+    checkErrorPageLeak(ctx),
     // 기본 상태
     checkStatusCode(ctx),
     checkRedirectChain(ctx),
     checkTtfb(ctx),
+    checkCharset(ctx),
     // 기술
     checkGenerator(ctx, tech.generator),
     checkJquery(ctx, tech.jquery),

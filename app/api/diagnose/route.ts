@@ -3,6 +3,7 @@ import { safeFetch, safeFetchPath, SsrfBlockedError, FetchTimeoutError } from "@
 import { validateUrlSyntax, normalizeInputUrl } from "@/lib/ssrf";
 import { buildChecks, extractTech, type DiagnosisContext } from "@/lib/checks";
 import { calculateScore } from "@/lib/score";
+import { probeErrorPage, probeSourcemaps, probeTlsDaysUntilExpiry } from "@/lib/probes";
 
 const EXPOSED_PATHS = [".env", ".git/HEAD", "wp-config.php", ".DS_Store", "server-status"] as const;
 
@@ -29,9 +30,14 @@ export async function POST(req: NextRequest) {
   try {
     const result = await safeFetch(trimmedUrl);
 
-    const [exposedEnv, exposedGit, exposedWpConfig, exposedDsStore, exposedServerStatus] = await Promise.all(
-      EXPOSED_PATHS.map((path) => safeFetchPath(result.finalUrl, "/" + path))
-    );
+    // 부가 체크는 모두 병렬로 (Vercel Hobby 10초 함수 제한)
+    const [exposedResults, sourcemapProbes, tlsDaysUntilExpiry, errorPageProbe] = await Promise.all([
+      Promise.all(EXPOSED_PATHS.map((path) => safeFetchPath(result.finalUrl, "/" + path))),
+      probeSourcemaps(result.body, result.finalUrl),
+      probeTlsDaysUntilExpiry(result.finalUrl),
+      probeErrorPage(result.finalUrl),
+    ]);
+    const [exposedEnv, exposedGit, exposedWpConfig, exposedDsStore, exposedServerStatus] = exposedResults;
 
     const ctx: DiagnosisContext = {
       inputUrl: trimmedUrl,
@@ -46,6 +52,9 @@ export async function POST(req: NextRequest) {
       exposedWpConfig,
       exposedDsStore,
       exposedServerStatus,
+      sourcemapProbes,
+      tlsDaysUntilExpiry,
+      errorPageProbe,
     };
 
     const checks = buildChecks(ctx);

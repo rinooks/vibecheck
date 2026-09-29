@@ -1,114 +1,150 @@
 .card {
-  border: 1px solid #e5e7eb;
-  border-left-width: 5px;
-  border-radius: 12px;
-  padding: 1.1rem 1.25rem;
-  background: white;
-  display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
+  position: relative;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
 }
 
-.card.pass {
-  border-left-color: #22c55e;
-}
-
-.card.warning {
-  border-left-color: #eab308;
-}
-
-.card.danger {
-  border-left-color: #ef4444;
+.card::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  background: var(--tone);
 }
 
 .header {
+  width: 100%;
   display: flex;
-  align-items: center;
-  gap: 0.6rem;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 1rem 1.1rem 1rem 1.25rem;
+  background: none;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  color: inherit;
 }
 
-.title {
-  font-size: 1.02rem;
-  font-weight: 700;
-  color: #111827;
-  margin: 0;
+.header:hover {
+  background: #fafbfd;
 }
 
 .statusBadge {
-  font-size: 0.75rem;
-  font-weight: 700;
-  padding: 0.15rem 0.6rem;
-  border-radius: 999px;
-  color: white;
   flex-shrink: 0;
+  margin-top: 0.1rem;
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 0.18rem 0.55rem;
+  border-radius: 999px;
+  color: var(--tone);
+  background: var(--tone-bg);
+  border: 1px solid var(--tone-border);
 }
 
-.badge-pass {
-  background: #22c55e;
+.headText {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
 }
 
-.badge-warning {
-  background: #eab308;
-}
-
-.badge-danger {
-  background: #ef4444;
+.title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--foreground);
 }
 
 .details {
-  font-size: 0.85rem;
-  color: #6b7280;
-  margin: 0;
-  word-break: break-all;
+  font-size: 0.84rem;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
+.chevron {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  margin: 0.45rem 0.2rem 0 0;
+  border-right: 2px solid var(--subtle);
+  border-bottom: 2px solid var(--subtle);
+  transform: rotate(45deg);
+  transition: transform 0.2s ease;
+}
+
+.chevronOpen {
+  transform: rotate(225deg);
+  margin-top: 0.6rem;
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 0 1.1rem 1.1rem 1.25rem;
 }
 
 .section {
-  background: #f9fafb;
-  border-radius: 8px;
-  padding: 0.6rem 0.8rem;
+  background: #f8fafc;
+  border-radius: 10px;
+  padding: 0.7rem 0.85rem;
 }
 
 .sectionLabel {
-  font-size: 0.78rem;
-  font-weight: 700;
-  color: #374151;
-  margin: 0 0 0.25rem 0;
+  font-size: 0.76rem;
+  font-weight: 800;
+  color: var(--ink-soft);
+  margin-bottom: 0.25rem;
 }
 
 .sectionBody {
   font-size: 0.9rem;
-  color: #1f2937;
-  margin: 0;
-  line-height: 1.5;
+  color: #1e293b;
+  line-height: 1.6;
 }
 
-.promptBox {
+.promptSection {
+  background: var(--brand-soft);
+  border: 1px dashed #c7d6fb;
+}
+
+.promptHead {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
+  justify-content: space-between;
   gap: 0.6rem;
+  margin-bottom: 0.25rem;
+}
+
+.promptHead .sectionLabel {
+  margin-bottom: 0;
+  color: var(--brand-strong);
 }
 
 .promptText {
-  flex: 1;
-  font-size: 0.85rem;
-  color: #1f2937;
-  margin: 0;
-  line-height: 1.5;
+  font-size: 0.86rem;
+  color: #1e293b;
+  line-height: 1.6;
   white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
 .copyButton {
   flex-shrink: 0;
-  border: 1px solid #d1d5db;
-  background: white;
-  border-radius: 6px;
-  padding: 0.3rem 0.7rem;
+  border: 1px solid #c7d6fb;
+  background: var(--surface);
+  border-radius: 8px;
+  padding: 0.35rem 0.8rem;
   font-size: 0.8rem;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
-  color: #374151;
+  color: var(--brand);
+  min-height: 32px;
 }
 
 .copyButton:hover {
-  background: #f3f4f6;
+  background: #f5f8ff;
 }

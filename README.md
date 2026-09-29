@@ -69,8 +69,8 @@ npm run start
 
 | 카테고리 | 항목 |
 | --- | --- |
-| 보안 | HTTPS 사용, HSTS, CSP, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy, `.env`/`.git`/`wp-config.php`/`.DS_Store`/`server-status` 노출, 혼합 콘텐츠 |
-| 기본 상태 | 최종 상태 코드, 리다이렉트 횟수, 첫 응답 속도(TTFB) |
+| 보안 | HTTPS 사용, HSTS, CSP, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy, `.env`/`.git`/`wp-config.php`/`.DS_Store`/`server-status` 노출, 혼합 콘텐츠, 소스맵(.map) 노출, SSL 인증서 만료일, 쿠키 보안 플래그, CORS `*` 허용, 에러 페이지 내부 정보 노출 |
+| 기본 상태 | 최종 상태 코드, 리다이렉트 횟수, 첫 응답 속도(TTFB), 문자 인코딩(charset) 선언 |
 | 기술 | generator 메타 태그 노출, jQuery 버전, Server 헤더 버전 노출 |
 | SEO | title, meta description, 오픈그래프 태그, viewport, html lang |
 
@@ -97,7 +97,11 @@ npm run start
 5. **타임아웃·용량 제한** — 요청은 10초 후 자동 중단되고, 응답 본문은 최대
    2MB까지만 읽습니다.
 6. **노출 경로 체크 범위 제한** — `/.env` 등 노출 여부 확인은 사용자가 입력한
-   URL과 **같은 호스트**에서만 수행합니다.
+   URL과 **같은 호스트**에서만 수행합니다. 소스맵 확인도 같은 origin의
+   스크립트만 대상으로 합니다.
+7. **TLS 인증서 확인** — 인증서 만료일을 보려고 443 포트에 직접 접속할 때도
+   먼저 `validateUrlFully`로 검증하고, 실제 접속 시점의 DNS 결과가 사설 대역이면
+   연결을 끊습니다.
 
 ## 주의사항
 

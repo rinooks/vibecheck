@@ -25,3 +25,19 @@ export function gradeFromScore(score: number): Grade {
   if (score >= 50) return "주의";
   return "위험";
 }
+
+// 등급·상태별 색상 톤. globals.css의 [data-tone] 규칙과 짝을 이룬다.
+export type Tone = "excellent" | "good" | "caution" | "danger";
+
+export const GRADE_TONE: Record<Grade, Tone> = {
+  우수: "excellent",
+  양호: "good",
+  주의: "caution",
+  위험: "danger",
+};
+
+export const STATUS_TONE: Record<Check["status"], Tone> = {
+  pass: "excellent",
+  warning: "caution",
+  danger: "danger",
+};
