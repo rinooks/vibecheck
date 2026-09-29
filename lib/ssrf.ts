@@ -71,6 +71,18 @@ export function isBlockedHostnameLiteral(hostname: string): boolean {
 
 const ALLOWED_PORTS = new Set([80, 443, 8080, 8443]);
 
+/**
+ * 입력 정규화: 스킴(http:// 또는 https://)이 없으면 https:// 를 붙인다.
+ * 예) "example.com" → "https://example.com"
+ */
+export function normalizeInputUrl(raw: string): string {
+  const trimmed = raw.trim();
+  if (/^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//.test(trimmed)) {
+    return trimmed;
+  }
+  return `https://${trimmed}`;
+}
+
 /** URL 문법 검증: 스킴, 포트, userinfo 등. DNS 조회는 하지 않음. */
 export function validateUrlSyntax(rawUrl: string): { ok: true; url: URL } | { ok: false; reason: string } {
   let url: URL;

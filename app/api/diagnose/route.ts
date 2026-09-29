@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { safeFetch, safeFetchPath, SsrfBlockedError, FetchTimeoutError } from "@/lib/fetcher";
-import { validateUrlSyntax } from "@/lib/ssrf";
+import { validateUrlSyntax, normalizeInputUrl } from "@/lib/ssrf";
 import { buildChecks, extractTech, type DiagnosisContext } from "@/lib/checks";
 import { calculateScore } from "@/lib/score";
 
@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "진단할 URL을 입력해 주세요." }, { status: 400 });
   }
 
-  const trimmedUrl = inputUrl.trim();
+  const trimmedUrl = normalizeInputUrl(inputUrl);
 
   const syntaxCheck = validateUrlSyntax(trimmedUrl);
   if (!syntaxCheck.ok) {
