@@ -1,0 +1,114 @@
+.card {
+  border: 1px solid #e5e7eb;
+  border-left-width: 5px;
+  border-radius: 12px;
+  padding: 1.1rem 1.25rem;
+  background: white;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.card.pass {
+  border-left-color: #22c55e;
+}
+
+.card.warning {
+  border-left-color: #eab308;
+}
+
+.card.danger {
+  border-left-color: #ef4444;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.title {
+  font-size: 1.02rem;
+  font-weight: 700;
+  color: #111827;
+  margin: 0;
+}
+
+.statusBadge {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+  color: white;
+  flex-shrink: 0;
+}
+
+.badge-pass {
+  background: #22c55e;
+}
+
+.badge-warning {
+  background: #eab308;
+}
+
+.badge-danger {
+  background: #ef4444;
+}
+
+.details {
+  font-size: 0.85rem;
+  color: #6b7280;
+  margin: 0;
+  word-break: break-all;
+}
+
+.section {
+  background: #f9fafb;
+  border-radius: 8px;
+  padding: 0.6rem 0.8rem;
+}
+
+.sectionLabel {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #374151;
+  margin: 0 0 0.25rem 0;
+}
+
+.sectionBody {
+  font-size: 0.9rem;
+  color: #1f2937;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.promptBox {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+}
+
+.promptText {
+  flex: 1;
+  font-size: 0.85rem;
+  color: #1f2937;
+  margin: 0;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+.copyButton {
+  flex-shrink: 0;
+  border: 1px solid #d1d5db;
+  background: white;
+  border-radius: 6px;
+  padding: 0.3rem 0.7rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  color: #374151;
+}
+
+.copyButton:hover {
+  background: #f3f4f6;
+}
